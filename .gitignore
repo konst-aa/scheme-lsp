@@ -1,5 +1,6 @@
 .egg2nix-cache-5
 result
+server
 out
 .egg2nix-cache-5
 *.o
