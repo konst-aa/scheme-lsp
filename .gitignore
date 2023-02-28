@@ -1,0 +1,7 @@
+.egg2nix-cache-5
+result
+out
+.egg2nix-cache-5
+*.o
+*.import.scm
+*.c
