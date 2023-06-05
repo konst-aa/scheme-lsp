@@ -11,7 +11,7 @@
       defaultBuildInputs =
         let
           stdenv = pkgs.stdenv;
-          eggs = import ./eggs.nix { inherit pkgs stdenv; };
+          eggs = pkgs.chickenPackages.chickenEggs;
         in
         with eggs; [
           pkgs.chicken

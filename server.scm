@@ -1,10 +1,10 @@
 (import json
         uuid
-        (chicken random)
         (chicken io)
-        (chicken format)
         (chicken port)
-        (chicken string))
+        (chicken string)
+        requests
+        responses)
 
 ; https://gist.github.com/dhess/52681
 (define (json-read-fixup jro)
@@ -14,17 +14,18 @@
                            (json-read-fixup (cdr jro))))
         (else jro)))
 
-(define (json-read-fixup2 jro)
-  (cond ((null? jro) jro)
-        ((vector? jro)
-         (alist->hash-table (json-read-fixup2 (vector->list jro))))
-        ((pair? jro)
-         (cons (json-read-fixup2 (car jro))
-               (json-read-fixup2 (cdr jro))))
-        (else jro)))
+(define in-file (open-output-file "/home/konst/code/scheme-lsp/in.txt"))
+(define out-file (open-output-file "/home/konst/code/scheme-lsp/out.txt"))
 
-(define logfile (open-output-file "/home/konst/code/scheme-lsp/log"))
+(define (log-out val)
+  (display val out-file)
+  (newline out-file)
+  (flush-output out-file))
 
+(define (log-in val)
+  (display val in-file)
+  (newline in-file)
+  (flush-output in-file))
 
 (define (read-msg)
   (let*
@@ -32,28 +33,27 @@
      (req (read-string (+ 2 content-length))))
     (json-read-fixup (call-with-input-string req json-read))))
 
-(define (serialize alist)
-  (let*
-    ((stapled (list->vector (append alist (list (cons "jsonrpc" "2.0")
-                                                (cons "id" (uuid))))))
-     (json-payload (call-with-output-string
-                     (lambda (port)
-                       (json-write stapled port))))
-     (len (string-length json-payload)))
-    (sprintf "Content-Length: ~A\r\n\r\n~A" len json-payload)))
 
+(define (display/flush msg)
+  (display msg)
+  (flush-output))
 
+(define (retrieve key table)
+  (alist-ref key table equal?))
 
 (define (dispatch! msg)
-  (display msg logfile))
+  (let* ((id (retrieve "id" msg))
+         (method (retrieve "method" msg))
+         (params (retrieve "params" msg)))
+        (log-in msg)
+        (case (string->symbol method)
+          ((initialize)
+           (display/flush (initialize id params)))
+          (else
+            (log-out "unknown method")))))
 
 (define (loop)
-  (dispatch! (read-msg)))
-
-(define initialize-struct (read-msg))
-
-; do initialization here
-
-(display (serialize (list (cons "method" "initialized"))))
+  (dispatch! (read-msg))
+  (loop))
 
 (loop)
