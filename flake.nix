@@ -16,9 +16,13 @@
         with eggs; [
           pkgs.chicken
           pkgs.gnumake
+          pkgs.rlwrap
           args
+          srfi-18
           json
           uuid
+          srfi-133
+          list-utils
         ];
     in
     {

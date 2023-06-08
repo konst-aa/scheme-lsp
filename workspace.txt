@@ -1,0 +1,11 @@
+starting workspace
+workspace received: ((jsonrpc . 2.0) (method . textDocument/didOpen) (params (textDocument (uri . file:///home/konst/code/scheme-lsp/test.scm) (languageId . scheme) (version . 1) (text . (1 1 2 3 )
+more blah
+(more stuff)
+))))
+starting doc: file:///home/konst/code/scheme-lsp/test.scm
+starting up doc thread
+file:///home/konst/code/scheme-lsp/test.scm received: ((jsonrpc . 2.0) (method . textDocument/didOpen) (params (textDocument (uri . file:///home/konst/code/scheme-lsp/test.scm) (languageId . scheme) (version . 1) (text . (1 1 2 3 )
+more blah
+(more stuff)
+))))
