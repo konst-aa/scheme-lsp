@@ -158,8 +158,8 @@
              (display/flush (serialize (initialize id params)))
              ))
          ;error here
-         (display/flush (error-response id invalid-request "already initialized")))
-       )
+         (display/flush (serialize (error-response id invalid-request "already initialized")))
+       ))
 
       ((stop)
        (display/flush (stop id)))

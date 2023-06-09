@@ -2,7 +2,8 @@
   (serialize read-msg retrieve display/flush range vector-dict
              make-logger! make-mailbox make-and-start-thread! thread-receive thread-send
              parse-params
-             make-filled-mutex)
+             make-filled-mutex
+             contains)
 
   (import scheme
           json
@@ -47,9 +48,11 @@
   ;                (json-read-fixup (cdr jro))))
   ;         (else jro)))
 
+  (define (contains lst item)
+    (foldl (lambda (x y) (or x y)) #f (map (lambda (x) (equal? x item)) lst)))
+
   (define (make-mailbox thunk name)
-    (let* ((mailbox (make-mutex))
-           (asdf (mutex-specific-set! mailbox '()))
+    (let* ((mailbox (make-filled-mutex '() name))
            (thread (make-thread thunk name)))
       (thread-specific-set! thread mailbox)
       thread))

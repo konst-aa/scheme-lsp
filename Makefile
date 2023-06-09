@@ -3,8 +3,9 @@ utils := utils.o -uses utils
 error-codes := error-codes.o -uses error-codes
 text-document := text-document.o -uses text-document
 workspace := workspace.o -uses workspace
+cst := cst.o -uses cst
 
-modules := $(responses) $(utils) $(error-codes) $(text-document) $(workspace)
+modules := $(responses) $(utils) $(error-codes) $(text-document) $(workspace) $(cst)
 
 server: responses utils error-codes text-document workspace server.scm	
 	csc $(modules) server.scm -o server
@@ -21,8 +22,11 @@ error-codes: error-codes.sld
 text-document: utils responses text-document.sld
 	csc -c -J $(utils) $(responses) text-document.sld -unit text-document -o text-document.o
 
-workspace: utils workspace.sld
-	csc -c -J $(utils) workspace.sld -unit workspace -o workspace.o
+workspace: utils cst responses workspace.sld
+	csc -c -J $(utils) $(cst) $(responses) workspace.sld -unit workspace -o workspace.o
+
+cst: utils cst.sld
+	csc -c -J $(utils) cst.sld -unit cst -o cst.o
 
 clean:
 	rm -f *.o

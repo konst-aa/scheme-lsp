@@ -5,6 +5,8 @@
           (chicken format)
           scheme
           utils
+          cst
+          responses
           srfi-18)
 
   ; text-document/did-open
@@ -26,13 +28,49 @@
     (make-doc-state text ast symbols logger)
     doc-state?
     (text doc-state-text (setter doc-state-text))
-    (ast doc-state-ast (setter doc-state-ast))
+    (ast doc-state-cst (setter doc-state-cst))
     (symbols doc-state-symbols (setter doc-state-symbols))
     (logger doc-state-logger)
     )
 
+  (define (make-diagnostic range message severity)
+    (vector-dict 'range range 'message message 'severity severity))
+
+  (define (mark-numbers cst logger)
+    (define (traversal value)
+      (case (value-type value)
+        ((list) (apply append (map traversal (value-contents value))))
+        ((number)
+         (logger (sprintf "marking number: ~A" value))
+         (list (make-diagnostic (value->range value) "number" 2)))
+        ((comment)
+         (logger (sprintf "marking comment: ~A" value))
+         (list (make-diagnostic (value->range value) "comment" 2)))
+        (else '())))
+    (apply append (map traversal cst)))
+
   (define (text-document/did-open! state id params)
-    "")
+    (define text-document (retrieve "textDocument" params (list)))
+    (define text (retrieve "text" text-document (list)))
+    (define logger (doc-state-logger state))
+
+    (set! (doc-state-text state) text)
+    (logger
+     (sprintf "~A, new text: ~A" (thread-name (current-thread)) (doc-state-text state)))
+
+    (logger "making a cst")
+    (set! (doc-state-cst state) (make-cst text logger))
+
+    (define msg (diagnostics-message (symbol->string (thread-name (current-thread)))
+                                     (mark-numbers (doc-state-cst state) logger)))
+
+    (logger "marking numbers")
+    (logger (mark-numbers (doc-state-cst state) logger))
+
+    (logger (serialize msg))
+    (display/flush
+      (serialize msg))
+    )
 
   (define (text-document/did-change! state id params)
     "")
@@ -70,9 +108,9 @@
           (else
             (logger (sprintf "unknown method: ~A" method))
             state))
-
-        ;(mutex-specific-set! mutex-state new-state)
-        (mutex-unlock! mutex-state)))
+        )
+      (mutex-unlock! mutex-state)
+      )
 
     (define mutex-state
       (make-filled-mutex (make-doc-state "" '() '() logger) name))
@@ -88,8 +126,8 @@
 
       (let*-values (((msg) (thread-receive))
                     ((id method params) (parse-params msg))
-                    ((uri) (string->symbol (retrieve "uri" (retrieve "textDocument" params (list)) "fail here")))
-                    )
+                    ((uri)
+                     (string->symbol (retrieve "uri" (retrieve "textDocument" params (list)) "fail here"))))
         (logger (sprintf "workspace received: ~A" msg))
 
         (case method
@@ -104,8 +142,7 @@
           ((textDocument/didChange textDocument/didClose textDocument/didSave)
            (logger (sprintf "sending to ~A" uri))
            (thread-send (alist-ref uri (state-documents (mutex-specific mutex-state))) msg)
-           (logger (sprintf "sent to ~A" uri)
-                   ))))
+           )))
 
       (mutex-unlock! mutex-state)
       (workspace-loop mutex-state))
