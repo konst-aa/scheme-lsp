@@ -21,6 +21,7 @@
           (chicken port)
           (chicken base)
           (chicken format)
+          (chicken string)
           utils)
 
   ;; possible values:
@@ -88,15 +89,15 @@
       (let ((c (car (pos-text pos))))
         (cond
           ((equal? c #\")
-           (values (make-value 'string (list->string (reverse acc)) start-pos pos #f) (pos-increment pos)))
+           (values (make-value 'string (reverse-list->string acc) start-pos pos #f) (pos-increment pos)))
           ((eof-object? c)
-           (values (make-value 'string (list->string (reverse acc)) start-pos pos #t) pos))
+           (values (make-value 'string (reverse-list->string acc) start-pos pos #t) pos))
           (else (loop (cons c acc) (pos-increment pos))))))
     (loop '() (pos-increment start-pos)))
 
   (define (parse-symbol start-pos)
     (define (rev-list->symbol lst)
-      (string->symbol (list->string (reverse lst))))
+      (string->symbol (reverse-list->string lst)))
 
     (define (loop acc pos)
       (let ((c (cadr (pos-text pos))))
@@ -104,7 +105,7 @@
           ((contains '(#\space #\newline #\tab #\) #\() c)
            (values (make-value 'symbol (rev-list->symbol acc) start-pos pos #f) (pos-increment pos)))
           ((eof-object? c)
-           (values (make-value 'string (rev-list->symbol acc) start-pos pos #f) (pos-increment pos)))
+           (values (make-value 'symbol (rev-list->symbol acc) start-pos pos #f) (pos-increment pos)))
           (else (loop (cons c acc) (pos-increment pos))))))
 
     (loop (list (car (pos-text start-pos))) start-pos))
@@ -126,7 +127,7 @@
 
   (define (parse-number start-pos)
     (define (rev-list->number lst)
-      (string->number (list->string (reverse lst))))
+      (string->number (reverse-list->string lst)))
 
     (define (loop acc pos)
       (let ((c (cadr (pos-text pos))))
@@ -145,9 +146,9 @@
       (let ((c (car (pos-text pos))))
         (cond
           ((equal? c #\newline)
-           (values (make-value 'comment (list->string (reverse acc)) start-pos pos #f) (pos-increment pos)))
+           (values (make-value 'comment (reverse-list->string acc) start-pos pos #f) (pos-increment pos)))
           ((eof-object? c)
-           (values (make-value 'comment (list->string (reverse acc)) start-pos pos #f) (pos-increment pos)))
+           (values (make-value 'comment (reverse-list->string acc) start-pos pos #f) (pos-increment pos)))
           (else (loop (cons c acc) (pos-increment pos))))))
 
     (loop '() (pos-increment start-pos)))
@@ -179,10 +180,9 @@
   (define (make-cst text logger)
     (define (loop acc pos)
       (let-values (((value new-pos) (parse-value pos)))
-        ; (logger "trying over here")
         (cond
           ((eof-object? (car (pos-text new-pos)))
-           (reverse acc))
+           (reverse (cons value acc)))
           (else
             (loop (cons value acc) new-pos)))))
 

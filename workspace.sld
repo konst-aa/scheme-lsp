@@ -37,9 +37,9 @@
     (vector-dict 'range range 'message message 'severity severity))
 
   (define (mark-numbers cst logger)
-    (define (traversal value)
+    (define (traverse value)
       (case (value-type value)
-        ((list) (apply append (map traversal (value-contents value))))
+        ((list) (apply append (map traverse (value-contents value))))
         ((number)
          (logger (sprintf "marking number: ~A" value))
          (list (make-diagnostic (value->range value) "number" 2)))
@@ -47,7 +47,23 @@
          (logger (sprintf "marking comment: ~A" value))
          (list (make-diagnostic (value->range value) "comment" 2)))
         (else '())))
-    (apply append (map traversal cst)))
+    (apply append (map traverse cst)))
+
+  (define (mark-incomplete cst logger)
+    (define (traverse value)
+      (case (value-type value)
+        ((list)
+         (if (value-err? value)
+           (list (make-diagnostic (value->range value) "Incomplete list" 1))
+           '()))
+        ((string)
+         (if (value-err? value)
+           (list (make-diagnostic (value->range value) "Incomplete string" 1))
+           '()))
+        (else '())))
+
+    (apply append (map traverse cst)))
+
 
   (define (text-document/did-open! state id params)
     (define text-document (retrieve "textDocument" params (list)))
@@ -56,13 +72,14 @@
 
     (set! (doc-state-text state) text)
     (logger
-     (sprintf "~A, new text: ~A" (thread-name (current-thread)) (doc-state-text state)))
+      (sprintf "~A, new text: ~A" (thread-name (current-thread)) (doc-state-text state)))
 
     (logger "making a cst")
     (set! (doc-state-cst state) (make-cst text logger))
 
     (define msg (diagnostics-message (symbol->string (thread-name (current-thread)))
-                                     (mark-numbers (doc-state-cst state) logger)))
+                                     (append (mark-numbers (doc-state-cst state) logger)
+                                             (mark-incomplete (doc-state-cst state) logger))))
 
     (logger "marking numbers")
     (logger (mark-numbers (doc-state-cst state) logger))

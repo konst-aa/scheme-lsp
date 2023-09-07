@@ -20,9 +20,9 @@
 
   ;; Constructor for a response object representing success.
   (define (success-response id result)
-    (vector-dict "jsonrpc" "2.0"
-                 "id" id
-                 "result" result))
+    (vector-dict 'jsonrpc "2.0"
+                 'id id
+                 'result result))
 
   (define not-given (gensym 'not-given))
 
