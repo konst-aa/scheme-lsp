@@ -1,28 +1,24 @@
 starting workspace
-workspace received: ((jsonrpc . 2.0) (method . textDocument/didOpen) (params (textDocument (uri . file:///home/konst/code/scheme-lsp/test.scm) (languageId . scheme) (version . 1) (text . 
-(this is an expression)
-;;; this is a docstring
-;;; more docstring
+workspace received: ((jsonrpc . 2.0) (method . textDocument/didOpen) (params (textDocument (uri . file:///home/konst/code/scheme-lsp/hi.scm) (languageId . scheme) (version . 1) (text . #!/usr/bin/env nix-shell
+#!nix-shell -i "./t.sh" -p chicken
+
+(display "hi")
 ))))
-starting doc: file:///home/konst/code/scheme-lsp/test.scm
+starting doc: file:///home/konst/code/scheme-lsp/hi.scm
 starting up doc thread
-file:///home/konst/code/scheme-lsp/test.scm received: ((jsonrpc . 2.0) (method . textDocument/didOpen) (params (textDocument (uri . file:///home/konst/code/scheme-lsp/test.scm) (languageId . scheme) (version . 1) (text . 
-(this is an expression)
-;;; this is a docstring
-;;; more docstring
+file:///home/konst/code/scheme-lsp/hi.scm received: ((jsonrpc . 2.0) (method . textDocument/didOpen) (params (textDocument (uri . file:///home/konst/code/scheme-lsp/hi.scm) (languageId . scheme) (version . 1) (text . #!/usr/bin/env nix-shell
+#!nix-shell -i "./t.sh" -p chicken
+
+(display "hi")
 ))))
-file:///home/konst/code/scheme-lsp/test.scm, new text: 
-(this is an expression)
-;;; this is a docstring
-;;; more docstring
+file:///home/konst/code/scheme-lsp/hi.scm, new text: #!/usr/bin/env nix-shell
+#!nix-shell -i "./t.sh" -p chicken
+
+(display "hi")
 
 making a cst
-marking comment: #,(value type: comment contents: ";; this is a docstring" start: #,(pos line: 2 column: 0 bound character: #\;) end: #,(pos line: 2 column: 23 bound character: #\newline) err: #f)
-marking comment: #,(value type: comment contents: ";; more docstring" start: #,(pos line: 3 column: 0 bound character: #\;) end: #,(pos line: 3 column: 18 bound character: #\newline) err: #f)
 marking numbers
-marking comment: #,(value type: comment contents: ";; this is a docstring" start: #,(pos line: 2 column: 0 bound character: #\;) end: #,(pos line: 2 column: 23 bound character: #\newline) err: #f)
-marking comment: #,(value type: comment contents: ";; more docstring" start: #,(pos line: 3 column: 0 bound character: #\;) end: #,(pos line: 3 column: 18 bound character: #\newline) err: #f)
-(#((range . #((start . #((line . 2) (character . 0))) (end . #((line . 2) (character . 24))))) (message . comment) (severity . 2)) #((range . #((start . #((line . 3) (character . 0))) (end . #((line . 3) (character . 19))))) (message . comment) (severity . 2)))
-Content-Length: 396
+()
+Content-Length: 146
 
-{"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": {"uri": "file:///home/konst/code/scheme-lsp/test.scm", "diagnostics": [{"range": {"start": {"line": 2, "character": 0}, "end": {"line": 2, "character": 24}}, "message": "comment", "severity": 2}, {"range": {"start": {"line": 3, "character": 0}, "end": {"line": 3, "character": 19}}, "message": "comment", "severity": 2}]}}
+{"jsonrpc": "2.0", "method": "textDocument/publishDiagnostics", "params": {"uri": "file:///home/konst/code/scheme-lsp/hi.scm", "diagnostics": []}}

@@ -1,6 +1,5 @@
 (module analysis
-  (test)
-
+  (first-pass)
   (import scheme
           (chicken base)
           (chicken string)
@@ -133,14 +132,5 @@
          )))
 
     (join-comments (apply append (map traversal cst)))
-    )
-
-  (define (test)
-    (define test-text (with-input-from-file "test.scm" read-string))
-    (define cst (make-cst test-text display))
-    (define analysis-cst
-      (first-pass cst "file:///home/konst/code/scheme-lsp/test.scm" display))
-    (display "made cst")
-    analysis-cst
     )
   )

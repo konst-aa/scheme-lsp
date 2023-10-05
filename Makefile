@@ -8,7 +8,7 @@ analysis := analysis.o -uses analysis
 
 modules := $(responses) $(utils) $(error-codes) $(text-document) $(workspace) $(cst) $(analysis)
 
-server: responses utils error-codes text-document workspace server.scm	
+server: coconut.jpg responses utils error-codes text-document workspace server.scm
 	csc $(modules) server.scm -o server
 
 responses: utils responses.sld
