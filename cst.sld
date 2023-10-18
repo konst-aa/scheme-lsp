@@ -14,6 +14,7 @@
     pos-column
     parse-test
     value->range
+    dummy-pos
     )
 
   (import scheme
@@ -54,7 +55,10 @@
     (text pos-text (setter pos-text))
     (line pos-line (setter pos-line))
     (column pos-column (setter pos-column))
-    )
+  )
+
+  (define dummy-pos
+    (make-pos '() 0 0))
 
   (define-record-printer (pos p out)
     (fprintf out "#,(pos line: ~s column: ~s bound character: ~s)"

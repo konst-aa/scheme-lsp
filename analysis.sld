@@ -1,23 +1,28 @@
 (module analysis
-  (first-pass)
+  (first-pass
+    second-pass)
   (import scheme
           (chicken base)
           (chicken string)
           (chicken io)
           (chicken port)
           (chicken format)
+          srfi-69
           cst
           srfi-1
+          utils
           )
 
   (define-record-type info
     (make-info type
+               inferred-type
                contents
                uri
                doc
                loc)
     info?
     (type info-type (setter info-type))
+    (inferred-type info-inferred-type (setter info-inferred-type))
     (contents info-contents)
     (uri info-uri)
     (doc info-doc (setter info-doc))
@@ -25,8 +30,10 @@
 
 
   (define-record-printer (info i out)
-    (fprintf out "#,(info type: ~s contents: ~s uri: ~s doc: ~s loc: ~s)"
-             (info-type i) (info-contents i) (info-uri i) (info-doc i) (info-loc i)))
+    (fprintf out "#,(info type: ~s inferred-type: ~s contents: ~s uri: ~s doc: ~s loc: )"
+             (info-type i) (info-inferred-type i) (info-contents i) (info-uri i) (info-doc i)
+             ;(info-loc i)
+             ))
 
   (define (make-loc value)
     (cons (value-start value) (value-end value)))
@@ -44,21 +51,25 @@
       (list->string (drop (string->list (value-contents comment)) offset)))
 
     (define (parse-type comment-body)
-      (with-input-from-string comment-body read))
+      (define t (with-input-from-string comment-body read))
+      t)
 
-    ;;d appends the comment to the previous s-expr/symbol
+    ;;d ;;; adds the comment to the previous s-expr
     (define (appended-doc? comment-text)
       (substring=? ";;" comment-text 0 0 2))
 
-    ;;d appends the comment to the previous s-expr/symbol
+    ;;d ;;d prepends the comment to the next s-expr
     (define (prepended-doc? comment-text)
       (substring=? ";d" comment-text 0 0 2))
 
+    ;;d ;t  adds type signature to the previous s-expr
     (define (appended-type? comment-text)
-      (substring=? "<" comment-text 0 0 1))
+      (substring=? "t" comment-text 0 0 1))
 
+    ;;d ;;t adds type signature to the next s-expr
     (define (prepended-type? comment-text)
-      (substring=? ";>" comment-text 0 0 2))
+      (substring=? ";t" comment-text 0 0 2))
+
 
     (define (apply-changes item changes)
       (define (fold-fn acc change)
@@ -104,33 +115,100 @@
         )
       )
 
-    (reverse (car (foldl fold-fn '(() . ()) lst))))
+    (reverse (car (foldl fold-fn '(() . ()) lst)))
+
+    )
 
   ;; a scope is a list of symbols
+  (define-record-type scope-entry
+    (make-scope-entry name type exec loc uri)
+    scope-entry?
+    (name scope-entry-name)
+    (type scope-entry-type)
+    (exec scope-entry-exec)
+    (loc scope-entry-loc)
+    (uri scope-entry-uri))
+
 
   (define (first-pass cst uri logger)
     ;;; Does comment expansion
-    ;;; converts the cst to a list of symbol-infos and s-expr-infos
-
+    ;;; converts the cst to a list of info records, removes comments
 
     (define (traversal value)
       (case (value-type value)
         ((comment)
          (list value)) ; comments will be joined later
         ((symbol)
-         (list (make-info 'symbol (cons (value-contents value) 'unbound) uri "" (make-loc value))))
+         (list (make-info 'symbol 'unknown (cons (value-contents value) 'unbound) uri "" (make-loc value))))
         ((number string)
-         (list (make-info (value-type value) (value-contents value) uri "" (make-loc value))))
+         (list (make-info (value-type value) 'unknown (value-contents value) uri "" (make-loc value))))
         ((list)
          (let ((prepared-list
                  (join-comments (apply append (map traversal (value-contents value))))))
-           (list (make-info 'unknown
-                            prepared-list
-                            uri
-                            ""
-                            (make-loc value))))
+           (list (make-info 'list 'unknown prepared-list uri "" (make-loc value))))
          )))
 
-    (join-comments (apply append (map traversal cst)))
+    (define t (map traversal cst))
+
+    (join-comments (apply append t))
+    )
+
+  (define (nil-op anst scope uri logger)
+    (let* ((proc-list (cdr (info-contents anst)))
+           (resolved-list (map (lambda (anst) (resolve anst scope))
+                               proc-list)))
+      )
+    (cons (make-info ) scope))
+
+  (define (retrieve-symbol sym-info)
+    (car (info-contents sym-info)))
+
+  (define (define-op anst scope uri logger)
+    (let ((proc-list (cdr (info-contents anst))))
+      (if (and (eq? 'symbol (info-type (car proc-list))) (not (null? (cdr proc-list))))
+        (begin
+          (set! (hash-table-ref scope (retrieve-symbol (car proc-list)))
+            (info-contents (cadr proc-list)))
+          (cons anst scope))
+        (cons anst scope))))
+
+  (define dummy-loc (cons dummy-pos dummy-pos))
+
+  (define (second-pass anst scope uri logger)
+    ;;; Does type inference and scope resolution
+    (define scope
+      (alist->hash-table
+        (list (cons '+
+                    (make-scope-entry
+                      '+
+                      '(number number -> number)
+                      nil-op
+                      dummy-loc
+                      uri))
+              (cons 'define
+                    (make-scope-entry
+                      'define
+                      '(symbol any -> undefined)
+                      define-op
+                      dummy-loc
+                      uri))
+              )))
+
+    (define (resolve anst scope)
+      (case (info-type anst)
+        ((list)
+         (let ((resolved-first (resolve (car (info-contents anst)) scope)))
+           ((scope-entry-exec resolved-first) anst scope uri logger)))
+        ((symbol)
+         (let ((retrieved (hash-table-ref scope (retrieve-symbol anst))))
+           (if (not (null? retrieved))
+             retrieved
+             (error "Unbound symbol" (info-contents anst)))))
+        (else (cons anst scope)))
+      )
+    (foldl (lambda (acc item)
+             (let ((resolved (resolve item (cdr acc))))
+               (cons (cons (car resolved) (car acc)) (cdr resolved))))
+           (cons '() scope) anst)
     )
   )

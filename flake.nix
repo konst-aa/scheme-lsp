@@ -14,15 +14,16 @@
           eggs = pkgs.chickenPackages.chickenEggs;
         in
         with eggs; [
+          args
+          json
+          list-utils
           pkgs.chicken
           pkgs.gnumake
           pkgs.rlwrap
-          args
-          srfi-18
-          json
-          uuid
           srfi-133
-          list-utils
+          srfi-18
+          srfi-69
+          uuid
         ];
     in
     {
